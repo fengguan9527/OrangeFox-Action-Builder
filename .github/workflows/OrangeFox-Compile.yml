@@ -132,7 +132,7 @@ jobs:
 
         lunch twrp_${{ inputs.DEVICE_NAME }}-bp2a-eng && \
         make clean && \
-        mka adbd ${{ inputs.BUILD_TARGET }}image
+        mka ${{ inputs.BUILD_TARGET }}image
 
 
     - name: Set Release Properties
