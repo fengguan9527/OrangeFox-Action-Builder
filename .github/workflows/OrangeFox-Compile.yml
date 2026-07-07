@@ -3,8 +3,8 @@ name: OrangeFox - Build
 # Credits to:
 # https://github.com/TeamWin
 # https://github.com/OrangeFox16
+# https://gitlab.com/OrangeFox
 # https://github.com/azwhikaru for Recovery Builder Template
-# And all Contributors in every repositories I used
 
 on:
   workflow_dispatch:
@@ -57,7 +57,6 @@ on:
         - 'vendorboot'
 
 
-
 jobs:
 
   build:
@@ -99,9 +98,9 @@ jobs:
       run: |
         sudo apt install aria2 -y
 
-        git clone https://github.com/OrangeFox16/sync.git -b master
+        git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
 
-        cd sync
+        cd scripts
 
         sudo bash setup/android_build_env.sh
 
@@ -202,7 +201,6 @@ jobs:
 
 
 
-
     - name: Upload to Release
 
       uses: softprops/action-gh-release@v2
@@ -211,9 +209,7 @@ jobs:
       with:
 
         files: |
-
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
-
           fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
 
 
@@ -224,21 +220,14 @@ jobs:
 
 
         body: |
-
           ## OrangeFox Recovery Build - Unofficial
-
 
           Build: fox_${{ inputs.MANIFEST_BRANCH }}
 
-
           Device: ${{ inputs.DEVICE_NAME }}
 
-
           Device Tree:
-
           ${{ inputs.DEVICE_TREE }}
 
-
           Commit:
-
           ${{ env.COMMIT_ID }}
