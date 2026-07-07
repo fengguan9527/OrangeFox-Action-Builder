@@ -21,7 +21,7 @@ on:
       DEVICE_TREE:
         description: 'OrangeFox Device Tree'
         required: true
-        default: 'https://github.com/haohao3001/android_device_xiaomi_myron.git'
+        default: 'https://github.com/fengguan9527/xiaomi_myron_k90pm_fox.git'
       DEVICE_TREE_BRANCH:
         description: 'OrangeFox Device Tree Branch'
         required: true
