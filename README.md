@@ -1,6 +1,6 @@
 # OrangeFox Action Builder
 
-# ​这是一个基于 GitHub Actions 的自动化编译脚本，专门用于编译 OrangeFox Recovery。该版本已加入对16.0的全新支持，并针对最新的编译同步策略（包含特定的 sync 仓库以及震动补丁逻辑）进行了深度优化。
+**这是一个基于 GitHub Actions 的自动化编译脚本，专门用于编译 OrangeFox Recovery。该版本已加入对16.0的全新支持，并针对最新的编译同步策略（包含特定的 sync 仓库以及震动补丁逻辑）进行了深度优化。**
 
 ### ​如何使用
 **​Fork 本仓库到你的个人 GitHub 账号下。**
