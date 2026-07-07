@@ -1,14 +1,10 @@
 name: OrangeFox - Build (16.0)
 
-Credits to:
-
-https://github.com/TeamWin
-
-https://gitlab.com/OrangeFox
-
-https://github.com/azwhikaru for Recovery Builder Template
-
-And all Contributors in every repositories I used
+# Credits to:
+# https://github.com/TeamWin
+# https://gitlab.com/OrangeFox
+# https://github.com/azwhikaru for Recovery Builder Template
+# And all Contributors in every repositories I used
 
 on:
   workflow_dispatch:
@@ -52,14 +48,9 @@ on:
         - recovery
         - vendorboot
       CUSTOM_NAME:
-        description: '自定义名称'
+        description: '自定义编译名称 (例如：Recovery 或含有你名字的标识)'
         required: true
         default: 'Recovery'
-        type: string
-      PATCHES:
-        description: '需应用的补丁 (填 all 应用全部.patch文件，或用逗号分隔: 0000-Add-haptics.patch,0001-screenshot.patch)'
-        required: true
-        default: 'all'
         type: string
 
 jobs:
@@ -73,109 +64,83 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+              
+    - name: Clean-up
+      uses: rokibhasansagar/slimhub_actions@main
 
-    - name: Clean-up  
-      uses: rokibhasansagar/slimhub_actions@main  
-
-    - name: Swap Space  
-      uses: pierotofy/set-swap-space@master  
-      with:  
-        swap-size-gb: 24  
-        
-    - name: Build Environment  
-      run: |  
-        sudo apt install aria2 -y  
-        git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master  
-        cd scripts  
-        sudo bash setup/android_build_env.sh  
-        
-    - name: Set-up Manifest  
-      if: inputs.MANIFEST_BRANCH == '16.0' || inputs.MANIFEST_BRANCH == '12.1' || inputs.MANIFEST_BRANCH == '11.0'  
-      run: |  
-        mkdir -p ${GITHUB_WORKSPACE}/OrangeFox  
-        cd ${GITHUB_WORKSPACE}/OrangeFox  
-        git config --global user.name "${{ github.actor }}"  
-        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"  
-        # 16.0 使用特定的 sync 仓库  
-        if [ "${{ inputs.MANIFEST_BRANCH }}" == "16.0" ]; then  
-          git clone https://github.com/OrangeFox16/sync.git -b master  
-        else  
-          git clone https://gitlab.com/OrangeFox/sync.git -b master  
-        fi  
-        cd sync  
-        ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}  
-
-    - name: Clone Device Tree  
-      run: |  
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}  
-        git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}  
-        cd ${{ inputs.DEVICE_PATH }}  
-        echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV  
-
-    - name: Building OrangeFox  
-      run: |  
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}  
-        set +e  
-        source build/envsetup.sh  
-        export ALLOW_MISSING_DEPENDENCIES=true  
-        set -e  
-          
-        # 解析并应用补丁
-        PATCH_INPUT="${{ inputs.PATCHES }}"
-        PATCH_DIR="$ANDROID_BUILD_TOP/${{ inputs.DEVICE_PATH }}"
-        RECOVERY_DIR="$ANDROID_BUILD_TOP/bootable/recovery"
-
-        if [ -n "$PATCH_INPUT" ]; then
-          echo "================ Applying Patches ================"
-          if [ "$PATCH_INPUT" = "all" ]; then
-            echo "Applying all patches in device tree..."
-            shopt -s nullglob
-            for patch in "$PATCH_DIR"/*.patch; do
-              echo "Applying $patch..."
-              git -C "$RECOVERY_DIR" apply "$patch" || echo "Patch already applied or failed, ignoring..."
-            done
-            shopt -u nullglob
-          else
-            echo "Applying specific patches..."
-            IFS=',' read -ra PATCH_LIST <<< "$PATCH_INPUT"
-            for patch_file in "${PATCH_LIST[@]}"; do
-              # 剔除可能存在的前后空格
-              patch_file=$(echo "$patch_file" | xargs)
-              if [ -f "$PATCH_DIR/$patch_file" ]; then
-                echo "Applying $patch_file..."
-                git -C "$RECOVERY_DIR" apply "$PATCH_DIR/$patch_file" || echo "Patch already applied or failed, ignoring..."
-              else
-                echo "Warning: Patch $patch_file not found in device tree, skipping..."
-              fi
-            done
-          fi
-          echo "=================================================="
+    - name: Swap Space
+      uses: pierotofy/set-swap-space@master
+      with:
+        swap-size-gb: 24
+      
+    - name: Build Environment
+      run: |
+        sudo apt install aria2 -y
+        git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
+        cd scripts
+        sudo bash setup/android_build_env.sh
+      
+    - name: Set-up Manifest
+      if: inputs.MANIFEST_BRANCH == '16.0' || inputs.MANIFEST_BRANCH == '12.1' || inputs.MANIFEST_BRANCH == '11.0'
+      run: |
+        mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
+        cd ${GITHUB_WORKSPACE}/OrangeFox
+        git config --global user.name "${{ github.actor }}"
+        git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+        # 16.0 使用特定的 sync 仓库
+        if [ "${{ inputs.MANIFEST_BRANCH }}" == "16.0" ]; then
+          git clone https://github.com/OrangeFox16/sync.git -b master
+        else
+          git clone https://gitlab.com/OrangeFox/sync.git -b master
         fi
-          
-        lunch ${{ inputs.LUNCH_TARGET }} && make clean && mka ${{ inputs.BUILD_TARGET }}image  
+        cd sync
+        ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
 
-    - name: Set Release Properties  
-      run: |  
-        echo "BUILD_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)" >> $GITHUB_ENV  
-        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}  
+    - name: Clone Device Tree
+      run: |
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
+        cd ${{ inputs.DEVICE_PATH }}
+        echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
-        DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"  
-        if [[ "${DEVICE_TREE_URL}" == *.git ]]; then  
-          DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"  
-        fi  
-        echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV  
+    - name: Building OrangeFox
+      run: |
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+        set +e
+        source build/envsetup.sh
+        export ALLOW_MISSING_DEPENDENCIES=true
+        set -e
+        
+        # 应用震动补丁 (如果补丁存在)
+        if [ -f "$ANDROID_BUILD_TOP/${{ inputs.DEVICE_PATH }}/0000-Add-haptics.patch" ]; then
+          echo "Applying haptics patch..."
+          git -C $ANDROID_BUILD_TOP/bootable/recovery apply $ANDROID_BUILD_TOP/${{ inputs.DEVICE_PATH }}/0000-Add-haptics.patch || echo "Patch already applied or failed, ignoring..."
+        fi
+        
+        lunch ${{ inputs.LUNCH_TARGET }} && make clean && mka ${{ inputs.BUILD_TARGET }}image
 
-    - name: Upload to Release  
-      uses: softprops/action-gh-release@v2  
-      with:  
-        files: |  
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img  
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip  
-        name: OrangeFox ${{ inputs.CUSTOM_NAME }} for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}  
-        tag_name: ${{ github.run_id }}  
-        body: |  
-          ## OrangeFox Recovery Build - Unofficial  
-          自定义名称: ${{ inputs.CUSTOM_NAME }}  
-          Build: fox_${{ inputs.MANIFEST_BRANCH }}  
-          Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})  
+    - name: Set Release Properties
+      run: |
+        echo "BUILD_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)" >> $GITHUB_ENV
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+
+        DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
+        if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
+          DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
+        fi
+        echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
+
+    - name: Upload to Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
+          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
+        name: OrangeFox ${{ inputs.CUSTOM_NAME }} for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
+        tag_name: ${{ github.run_id }}
+        body: |
+          ## OrangeFox Recovery Build - Unofficial
+          自定义名称: ${{ inputs.CUSTOM_NAME }}
+          Build: fox_${{ inputs.MANIFEST_BRANCH }}
+          Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
           Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
