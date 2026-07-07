@@ -4,7 +4,9 @@
 
 ### ​如何使用
 ​Fork 本仓库 到你的个人 GitHub 账号下。
+
 ​在你 Fork 的仓库中，前往 Actions 标签页。
+
 (如果提示 Actions 未启用，请点击绿色按钮允许其运行)。
 
 ​在左侧菜单中选择 OrangeFox - Build 流程，然后点击右侧的 Run workflow 下拉菜单，填写你的设备参数：
