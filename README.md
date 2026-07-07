@@ -25,6 +25,4 @@
  
  -**编译镜像**：编译生成物，可选 recovery、boot 或 vendorboot。
 
- -**​自定义编译名称**：梦到什么写什么。
-
- -**需应用的补丁**：留空则不应用；填 all 应用全部；逗号分隔多选，列如 0000-Add-haptics.patch,0001-screenshot.patch。
+ -**需应用的补丁**：留空则不应用；填 all 应用全部；逗号分隔多选，列如 0000-Add-haptics.patch,0001-Change-screenshot_path.patch。
