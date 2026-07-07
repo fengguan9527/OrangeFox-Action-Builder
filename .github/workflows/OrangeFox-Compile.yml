@@ -1,4 +1,4 @@
-name: OrangeFox - Build (16.0)
+name: OrangeFox - Build
 
 # Credits to:
 # https://github.com/TeamWin
@@ -19,27 +19,27 @@ on:
         - 12.1
         - 11.0
       DEVICE_TREE:
-        description: '设备树仓库地址 (Device Tree)'
+        description: '设备树仓库地址'
         required: true
         default: 'https://github.com/fengguan9527/xiaomi_myron_k90pm_fox.git'
       DEVICE_TREE_BRANCH:
-        description: '设备树分支 (Branch)'
+        description: '设备树分支'
         required: true
         default: 'main'
       DEVICE_PATH:
-        description: '设备路径 (Device Path)'
+        description: '设备树路径'
         required: true
         default: 'device/xiaomi/myron'
       DEVICE_NAME:
-        description: '设备代号 (Codename)'
+        description: '设备代号'
         required: true
         default: 'myron'
       LUNCH_TARGET:
-        description: '编译目标 (Lunch Target)'
+        description: '编译目标'
         required: true
         default: 'twrp_myron-bp2a-eng'
       BUILD_TARGET:
-        description: '编译分区镜像 (Build Target)'
+        description: '编译镜像'
         required: true
         default: 'recovery'
         type: choice
@@ -48,9 +48,14 @@ on:
         - recovery
         - vendorboot
       CUSTOM_NAME:
-        description: '自定义编译名称 (例如：Recovery 或含有你名字的标识)'
+        description: '自定义编译名称'
         required: true
         default: 'Recovery'
+        type: string
+      PATCHES:
+        description: '需应用的补丁 (填 all 应用全部.patch文件，或用逗号分隔多选'
+        required: true
+        default: 'all'
         type: string
 
 jobs:
@@ -111,10 +116,36 @@ jobs:
         export ALLOW_MISSING_DEPENDENCIES=true
         set -e
         
-        # 应用震动补丁 (如果补丁存在)
-        if [ -f "$ANDROID_BUILD_TOP/${{ inputs.DEVICE_PATH }}/0000-Add-haptics.patch" ]; then
-          echo "Applying haptics patch..."
-          git -C $ANDROID_BUILD_TOP/bootable/recovery apply $ANDROID_BUILD_TOP/${{ inputs.DEVICE_PATH }}/0000-Add-haptics.patch || echo "Patch already applied or failed, ignoring..."
+        # 解析并应用补丁
+        PATCH_INPUT="${{ inputs.PATCHES }}"
+        PATCH_DIR="$ANDROID_BUILD_TOP/${{ inputs.DEVICE_PATH }}"
+        RECOVERY_DIR="$ANDROID_BUILD_TOP/bootable/recovery"
+
+        if [ -n "$PATCH_INPUT" ]; then
+          echo "================ Applying Patches ================"
+          if [ "$PATCH_INPUT" = "all" ]; then
+            echo "Applying all patches in device tree..."
+            shopt -s nullglob
+            for patch in "$PATCH_DIR"/*.patch; do
+              echo "Applying $patch..."
+              git -C "$RECOVERY_DIR" apply "$patch" || echo "Patch already applied or failed, ignoring..."
+            done
+            shopt -u nullglob
+          else
+            echo "Applying specific patches..."
+            IFS=',' read -ra PATCH_LIST <<< "$PATCH_INPUT"
+            for patch_file in "${PATCH_LIST[@]}"; do
+              # 剔除可能存在的前后空格
+              patch_file=$(echo "$patch_file" | xargs)
+              if [ -f "$PATCH_DIR/$patch_file" ]; then
+                echo "Applying $patch_file..."
+                git -C "$RECOVERY_DIR" apply "$PATCH_DIR/$patch_file" || echo "Patch already applied or failed, ignoring..."
+              else
+                echo "Warning: Patch $patch_file not found in device tree, skipping..."
+              fi
+            done
+          fi
+          echo "=================================================="
         fi
         
         lunch ${{ inputs.LUNCH_TARGET }} && make clean && mka ${{ inputs.BUILD_TARGET }}image
