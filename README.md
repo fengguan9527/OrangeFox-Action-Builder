@@ -11,16 +11,18 @@
 **​在左侧菜单中选择 OrangeFox - Build 流程，然后点击右侧的 Run workflow 下拉菜单，填写你的设备参数**：
 
 # 参数名称填写
- -**MANIFEST_BRANCH**：可选 16.0 、12.1 或 11.0。
+ -**OrangeFox 源码分支**：可选 16.0 、12.1 或 11.0。
  
- -**DEVICE_TREE**：设备树仓库链接，你的 Recovery 设备树 Git 地址。
+ -**设备树仓库地址**：设备树仓库链接，你的 Recovery 设备树 Git 地址。
  
- -**DEVICE_TREE_BRANCH**：你设备树默认分支名。
+ -**设备树分支**：你设备树分支名。
 
- -**DEVICE_PATH**：设备树存放路径，在源码树中的绝对路径。
+ -**设备路径**：设备树存放路径，在源码树中的绝对路径。
  
- -**DEVICE_NAME**：例如你的设备代号。
+ -**设备代号**：你的设备代号。
  
- -**LUNCH_TARGET**：编译目标，执行 lunch 命令时的完整目标名称。
+ -**编译目标**：编译目标，执行 lunch 命令时的完整目标名称。
  
- -**BUILD_TARGET**：编译生成物，可选 recovery、boot 或 vendorboot。
+ -**编译分区镜像**：编译生成物，可选 recovery、boot 或 vendorboot。
+
+ -**​自定义编译名称**：梦到什么写什么。
