@@ -47,11 +47,6 @@ on:
         - boot
         - recovery
         - vendorboot
-      CUSTOM_NAME:
-        description: '自定义编译名称'
-        required: true
-        default: 'Recovery'
-        type: string
       PATCHES:
         description: '需应用的补丁 (留空则不应用；填 all 应用全部；逗号分隔多选'
         required: false
@@ -173,11 +168,10 @@ jobs:
         files: |
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-        name: OrangeFox ${{ inputs.CUSTOM_NAME }} for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
+        name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
-          ## OrangeFox Recovery Build - Unofficial
-          自定义名称: ${{ inputs.CUSTOM_NAME }}
-          Build: fox_${{ inputs.MANIFEST_BRANCH }}
-          Device: [Device Tree/Branch](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
-          Commit: Most recent [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }}) during building.
+          ## OrangeFox Recovery 非官方构建版
+          源码分支: fox_${{ inputs.MANIFEST_BRANCH }}
+          设备: [设备树/分支](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
+          构建提交: 构建时所使用的最近一次 [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})。
