@@ -3,14 +3,14 @@
 AVB 签名合并工具（纯 CI 模式）
 ==============================
 将 extract_avb.py 提取的签名文件合并到编译好的 recovery.img 上，
-生成带官方 AVB 签名的 recovery_avb_signed.img。
+生成带官方 AVB 签名的 recovery.img。
 
 所有路径从环境变量读取，由 OrangeFox-Compile.yml 传入:
 
 环境变量:
   ANDROID_BUILD_TOP  — 源码根目录
   DEVICE_PATH        — 设备树相对路径（如 device/xiaomi/myron）
-  AVB_SIG_FILE       — 签名文件名（相对于 DEVICE_PATH/AVB/，如 avb_signature.bin）
+  AVB_SIG_FILE       — 签名文件名（相对于 DEVICE_PATH/AVB/，如 avb_306.bin）
 
 格式说明:
   *.bin = [4字节 分区大小(big-endian)] [vbmeta blob] [64字节 footer]
