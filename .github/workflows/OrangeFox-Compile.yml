@@ -182,7 +182,7 @@ jobs:
         echo "ANDROID_BUILD_TOP=$ANDROID_BUILD_TOP" >> $GITHUB_ENV
 
     # ──────────────────────────────────────────────────
-    # 8. AVB 签名合并（merge_avb.py 在 Action Builder 根目录）
+    # 8. AVB 签名合并（签名文件在 Action Builder/AVB/, 脚本在根目录）
     # ──────────────────────────────────────────────────
     - name: Merge AVB Signature
       if: inputs.AVB_SIGNATURE != ''
