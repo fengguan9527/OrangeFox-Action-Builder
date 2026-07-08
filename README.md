@@ -26,3 +26,5 @@
  -**编译镜像**：编译生成物，可选 recovery、boot 或 vendorboot。
 
  -**需应用的补丁**：留空则不应用；填 all 应用全部；逗号分隔多选，列如 0000-Add-haptics.patch,0001-Change-screenshot_path.patch。
+ 
+ -**AVB签名移植**：留空则跳过 AVB 移植，如果你是假回锁用户，必须移植官方签名才能使用，ABV签名文件在AVB文件夹下
