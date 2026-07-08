@@ -48,12 +48,12 @@ on:
         - recovery
         - vendorboot
       PATCHES:
-        description: '需应用的补丁（留空则不应用；填 all 应用全部；逗号分隔多选）'
+        description: '需应用的补丁 (留空则不应用；填 all 应用全部；逗号分隔多选)'
         required: false
         default: 'all'
         type: string
       AVB_SIGNATURE:
-        description: 'AVB 签名文件名（留空则跳过 AVB 移植）'
+        description: 'AVB 签名文件名 (留空则跳过 AVB 移植)'
         required: false
         default: 'avb_306.bin'
         type: string
@@ -182,7 +182,7 @@ jobs:
         echo "ANDROID_BUILD_TOP=$ANDROID_BUILD_TOP" >> $GITHUB_ENV
 
     # ──────────────────────────────────────────────────
-    # 8. AVB 签名合并（通过环境变量传递签名文件名）
+    # 8. AVB 签名合并（merge_avb.py 在 Action Builder 根目录）
     # ──────────────────────────────────────────────────
     - name: Merge AVB Signature
       if: inputs.AVB_SIGNATURE != ''
@@ -196,7 +196,7 @@ jobs:
 
         export AVB_SIG_FILE="${{ inputs.AVB_SIGNATURE }}"
 
-        python3 ${{ inputs.DEVICE_PATH }}/merge_avb.py
+        python3 ${GITHUB_WORKSPACE}/merge_avb.py
 
         echo "[+] AVB 签名合并完成!"
 
