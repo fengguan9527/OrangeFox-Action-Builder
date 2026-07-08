@@ -109,11 +109,11 @@ def merge_avb(sig_file, custom_img, output_img):
 # ── 主入口 ──────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     build_top  = os.environ.get("ANDROID_BUILD_TOP", ".")
-    dev_path   = os.environ.get("DEVICE_PATH", "device/xiaomi/myron")
+    ws         = os.environ.get("GITHUB_WORKSPACE", ".")
     sig_name   = os.environ.get("AVB_SIG_FILE", "avb_signature.bin")
 
-    # 签名文件路径
-    sig_file = os.path.join(build_top, dev_path, "AVB", sig_name)
+    # 签名文件在 Action Builder 仓库的 AVB/ 目录下
+    sig_file = os.path.join(ws, "AVB", sig_name)
     if not os.path.exists(sig_file):
         print(f"[-] 错误：签名文件不存在 → {sig_file}")
         print("    请先用 extract_avb.py 从官方 recovery 提取签名，放入设备树 AVB/ 目录")
