@@ -53,7 +53,7 @@ on:
         default: 'all'
         type: string
       AVB_SIGNATURE:
-        description: 'AVB 签名文件名 (留空则跳过 AVB 移植)'
+        description: 'AVB签名移植 (留空则跳过 AVB 移植)'
         required: false
         default: 'avb_306.bin'
         type: string
@@ -239,5 +239,5 @@ jobs:
           源码分支: fox_${{ inputs.MANIFEST_BRANCH }}
           设备: [设备树/分支](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
           构建提交: [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
-          合入.patch补丁: ${{ env.RELEASE_PATCHES }}
+          合入的.patch补丁: ${{ env.RELEASE_PATCHES }}
           移植AVB签名: ${{ env.RELEASE_AVB }}
