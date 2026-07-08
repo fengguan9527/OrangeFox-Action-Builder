@@ -48,9 +48,14 @@ on:
         - recovery
         - vendorboot
       PATCHES:
-        description: '需应用的补丁 (留空则不应用；填 all 应用全部；逗号分隔多选'
+        description: '需应用的补丁 (留空则不应用；填 all 应用全部；逗号分隔多选)'
         required: false
-        default: ''
+        default: 'all'
+        type: string
+      AVB_SIGNATURE:
+        description: 'AVB 签名文件名 (extract_avb.py 提取的 .bin 文件，位于设备树 AVB/ 目录下，留空则跳过 AVB 移植)'
+        required: false
+        default: 'avb_306.bin'
         type: string
 
 jobs:
@@ -61,25 +66,41 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     permissions:
       contents: write
+
     steps:
+    # ──────────────────────────────────────────────────
+    # 1. 检出 Action Builder 仓库
+    # ──────────────────────────────────────────────────
     - name: Checkout
       uses: actions/checkout@v4
-              
+
+    # ──────────────────────────────────────────────────
+    # 2. 清理磁盘空间
+    # ──────────────────────────────────────────────────
     - name: Clean-up
       uses: rokibhasansagar/slimhub_actions@main
 
+    # ──────────────────────────────────────────────────
+    # 3. 设置 24GB 交换空间（物理内存不够时用）
+    # ──────────────────────────────────────────────────
     - name: Swap Space
       uses: pierotofy/set-swap-space@master
       with:
         swap-size-gb: 24
-      
+
+    # ──────────────────────────────────────────────────
+    # 4. 安装 Android 编译环境
+    # ──────────────────────────────────────────────────
     - name: Build Environment
       run: |
         sudo apt install aria2 -y
         git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
         cd scripts
         sudo bash setup/android_build_env.sh
-      
+
+    # ──────────────────────────────────────────────────
+    # 5. 同步 OrangeFox 源码
+    # ──────────────────────────────────────────────────
     - name: Set-up Manifest
       if: inputs.MANIFEST_BRANCH == '16.0' || inputs.MANIFEST_BRANCH == '12.1' || inputs.MANIFEST_BRANCH == '11.0'
       run: |
@@ -96,6 +117,9 @@ jobs:
         cd sync
         ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
 
+    # ──────────────────────────────────────────────────
+    # 6. 克隆设备树到指定路径
+    # ──────────────────────────────────────────────────
     - name: Clone Device Tree
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -103,6 +127,9 @@ jobs:
         cd ${{ inputs.DEVICE_PATH }}
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
+    # ──────────────────────────────────────────────────
+    # 7. 编译 OrangeFox Recovery
+    # ──────────────────────────────────────────────────
     - name: Building OrangeFox
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -110,7 +137,7 @@ jobs:
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
         set -e
-        
+
         # 解析并应用补丁
         PATCH_INPUT=$(echo "${{ inputs.PATCHES }}" | xargs)
         PATCH_DIR="$ANDROID_BUILD_TOP/${{ inputs.DEVICE_PATH }}"
@@ -148,9 +175,34 @@ jobs:
           fi
           echo "=================================================="
         fi
-        
+
         lunch ${{ inputs.LUNCH_TARGET }} && make clean && mka ${{ inputs.BUILD_TARGET }}image
 
+        # 导出构建环境变量供后续步骤使用
+        echo "ANDROID_BUILD_TOP=$ANDROID_BUILD_TOP" >> $GITHUB_ENV
+
+    # ──────────────────────────────────────────────────
+    # 8. AVB 签名合并（通过环境变量传递签名文件名）
+    # ──────────────────────────────────────────────────
+    - name: Merge AVB Signature
+      if: inputs.AVB_SIGNATURE != ''
+      run: |
+        cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
+
+        echo "=================================================="
+        echo "AVB 签名合并"
+        echo "  签名文件: AVB/${{ inputs.AVB_SIGNATURE }}"
+        echo "=================================================="
+
+        export AVB_SIG_FILE="${{ inputs.AVB_SIGNATURE }}"
+
+        python3 ${{ inputs.DEVICE_PATH }}/merge_avb.py
+
+        echo "[+] AVB 签名合并完成!"
+
+    # ──────────────────────────────────────────────────
+    # 9. 设置发布信息
+    # ──────────────────────────────────────────────────
     - name: Set Release Properties
       run: |
         echo "BUILD_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)" >> $GITHUB_ENV
@@ -162,12 +214,16 @@ jobs:
         fi
         echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
+    # ──────────────────────────────────────────────────
+    # 10. 上传到 GitHub Release
+    # ──────────────────────────────────────────────────
     - name: Upload to Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
           OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
+          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/recovery_avb_signed.img
         name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
