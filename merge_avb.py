@@ -36,7 +36,7 @@ def find_custom_recovery(base_dir):
 
 def merge_avb(sig_file, custom_img, output_img):
     print(f"[*] 签名文件  : {sig_file}")
-    print(f"[*] 自定义镜像: {custom_img}")
+    print(f"[*] 目标临时文件: {output_img}")
 
     # ── 1. 读取签名文件 ──────────────────────────────────────────────
     with open(sig_file, "rb") as f:
@@ -100,8 +100,8 @@ def merge_avb(sig_file, custom_img, output_img):
         f_out.write(new_footer)
 
     sz = os.path.getsize(output_img)
-    print(f"\n[+] AVB 移植成功 → {output_img}")
-    print(f"    最终大小: {sz} 字节 ({sz / 1024 / 1024:.2f} MB)")
+    print(f"\n[+] AVB 签名成功写入临时文件")
+    print(f"    临时文件大小: {sz} 字节 ({sz / 1024 / 1024:.2f} MB)")
     print(f"    已用/容量: {total_needed} / {part_size} ({part_size - total_needed} 字节剩余)")
     return True
 
@@ -119,27 +119,40 @@ if __name__ == "__main__":
         print("    请先用 extract_avb.py 从官方 recovery 提取签名，放入设备树 AVB/ 目录")
         sys.exit(1)
 
-    # 编译产物路径
+    # 编译产物路径（如 out/target/product/xxx/recovery.img）
     custom = find_custom_recovery(build_top)
     if not custom or not os.path.exists(custom):
         print("[-] 错误：找不到编译好的 recovery.img")
         print(f"    搜索路径: {build_top}/out/target/product/*/")
         sys.exit(1)
 
-    # 输出文件直接覆盖原始镜像
-    output = custom
+    # 1. 改为 .tmp 后缀的临时文件
+    temp_output = custom + ".tmp"
 
-    success = merge_avb(sig_file, custom, output)
-    sys.exit(0 if success else 1)
-
-    # 输出临时文件，成功后覆盖原始 OrangeFox 镜像
-    temp_output = custom + ".avb_tmp"
-
+    # 执行签名合并，先写入 .tmp 文件
     success = merge_avb(sig_file, custom, temp_output)
 
     if success:
-        os.replace(temp_output, custom)
-        print(f"[+] 已替换原始镜像: {custom}")
+        try:
+            # 2. 先删除原文件
+            if os.path.exists(custom):
+                os.remove(custom)
+                print(f"[+] 已成功删除原文件: {custom}")
+            
+            # 3. 然后将 .tmp 改名回原文件名（防改名失败/冲突）
+            os.rename(temp_output, custom)
+            print(f"[+] 临时文件已重命名为: {custom}")
+            print("[+] AVB 移植并替换完美完成！")
+            sys.exit(0)
+            
+        except Exception as e:
+            print(f"[-] 错误：在删除或重命名阶段发生异常: {e}")
+            # 如果出错且临时文件还存在，进行清理
+            if os.path.exists(temp_output):
+                os.remove(temp_output)
+            sys.exit(1)
     else:
+        # 签名失败，清理临时文件并退出
         if os.path.exists(temp_output):
             os.remove(temp_output)
+        sys.exit(1)
