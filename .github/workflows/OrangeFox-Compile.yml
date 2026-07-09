@@ -1,4 +1,4 @@
-Name: OrangeFox - Build
+name: OrangeFox - Build
 
 # Credits to:
 # https://github.com/TeamWin
@@ -228,23 +228,17 @@ jobs:
 
 
         # ==============================
-        # Release 文件重命名
+        # Release 文件重命名（已移除 AVB 后缀）
         # ==============================
         OUT_DIR="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}"
         RELEASE_DIR="${GITHUB_WORKSPACE}/release"
 
         mkdir -p "$RELEASE_DIR"
 
-        # 判定最终的文件名后缀后缀
-        if [ "${{ inputs.AVB_SIGNATURE }}" != "" ]; then
-            SUFFIX="_AVB_signed"
-        else
-            SUFFIX=""
-        fi
+        # 统一命名格式，不再追加 _AVB_signed
+        BUILD_NAME="OrangeFox_${{ inputs.DEVICE_NAME }}_${BUILD_DATE}_REDMI-K90-PROMAX"
 
-        BUILD_NAME="OrangeFox_${{ inputs.DEVICE_NAME }}_${BUILD_DATE}_REDMI-K90-PROMAX${SUFFIX}"
-
-        # 复制 img（此时的 img 是已经被 Python 覆盖重写过的完好成品）
+        # 复制 img（此时的 img 是已经被 Python 注入签名并覆盖重写的完好成品）
         for file in "$OUT_DIR"/OrangeFox*.img; do
           if [ -f "$file" ]; then
             cp "$file" "$RELEASE_DIR/${BUILD_NAME}.img"
@@ -260,6 +254,7 @@ jobs:
 
         echo "========== Release 文件 =========="
         ls -lh "$RELEASE_DIR"
+
 
     # ──────────────────────────────────────────────────
     # 8. 上传到 GitHub Release
