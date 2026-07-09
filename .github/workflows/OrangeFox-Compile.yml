@@ -195,27 +195,78 @@ jobs:
         echo "[+] AVB 签名合并完成!"
 
     # ──────────────────────────────────────────────────
-    # 7. 设置发布信息
+    # 7. 设置发布信息 + 重命名 Release 文件
     # ──────────────────────────────────────────────────
     - name: 设置发布信息
       run: |
-        echo "BUILD_DATE=$(TZ=Asia/Shanghai date +'%Y%m%d')" >> $GITHUB_ENV
+        echo "BUILD_DATE=$(TZ=Asia/Shanghai date +'%y%m%d')" >> $GITHUB_ENV
         echo "BUILD_TIME=$(TZ=Asia/Shanghai date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
+
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
 
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
         if [[ "${DEVICE_TREE_URL}" == *.git ]]; then
           DEVICE_TREE_URL="${DEVICE_TREE_URL%.git}"
         fi
+
         echo "DEVICE_TREE_URL=${DEVICE_TREE_URL}" >> $GITHUB_ENV
 
-        # 格式化补丁和签名信息供 body 使用
         PATCH_INFO="${{ inputs.PATCHES }}"
         AVB_INFO="${{ inputs.AVB_SIGNATURE }}"
-        if [ -z "$PATCH_INFO" ]; then PATCH_INFO="无"; fi
-        if [ -z "$AVB_INFO" ]; then AVB_INFO="无（跳过）"; fi
+
+        if [ -z "$PATCH_INFO" ]; then
+          PATCH_INFO="无"
+        fi
+
+        if [ -z "$AVB_INFO" ]; then
+          AVB_INFO="无（跳过）"
+        fi
+
         echo "RELEASE_PATCHES=$PATCH_INFO" >> $GITHUB_ENV
         echo "RELEASE_AVB=$AVB_INFO" >> $GITHUB_ENV
+
+
+        # ==============================
+        # Release 文件重命名
+        # 格式:
+        # OrangeFox_设备代号_日期_REDMI-K90-PROMAX
+        # ==============================
+
+        OUT_DIR="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}"
+        RELEASE_DIR="${GITHUB_WORKSPACE}/release"
+
+        mkdir -p "$RELEASE_DIR"
+
+        BUILD_NAME="OrangeFox_${{ inputs.DEVICE_NAME }}_${BUILD_DATE}_REDMI-K90-PROMAX"
+
+
+        # img
+        for file in "$OUT_DIR"/OrangeFox*.img; do
+          if [ -f "$file" ]; then
+            cp "$file" "$RELEASE_DIR/${BUILD_NAME}.img"
+          fi
+        done
+
+
+        # zip
+        for file in "$OUT_DIR"/OrangeFox*.zip; do
+          if [ -f "$file" ]; then
+            cp "$file" "$RELEASE_DIR/${BUILD_NAME}.zip"
+          fi
+        done
+
+
+        # AVB签名
+        if [ -f "$OUT_DIR/recovery_avb_signed.img" ]; then
+          cp "$OUT_DIR/recovery_avb_signed.img" \
+          "$RELEASE_DIR/${BUILD_NAME}_AVB.img"
+        fi
+
+
+        echo "========== Release 文件 =========="
+        ls -lh "$RELEASE_DIR"
+
+
 
     # ──────────────────────────────────────────────────
     # 8. 上传到 GitHub Release
@@ -224,16 +275,26 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.img
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/OrangeFox*.zip
-          OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}/recovery_avb_signed.img
+          release/*
         name: OrangeFox Recovery for ${{ inputs.DEVICE_NAME }} // ${{ env.BUILD_DATE }}
         tag_name: ${{ github.run_id }}
         body: |
           ## OrangeFox Recovery 非官方构建版
+
           源码分支: fox_${{ inputs.MANIFEST_BRANCH }}
-          设备: [设备树/分支](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
-          构建提交: [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
-          构建时间: ${{ env.BUILD_TIME }}
-          合入.patch补丁: ${{ env.RELEASE_PATCHES }}
-          移植AVB签名: ${{ env.RELEASE_AVB }}
+
+          设备:
+          [设备树/分支](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
+
+          构建提交:
+          [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
+
+          构建时间:
+          ${{ env.BUILD_TIME }}
+
+          合入.patch补丁:
+          ${{ env.RELEASE_PATCHES }}
+
+          移植AVB签名:
+          ${{ env.RELEASE_AVB }}
+
