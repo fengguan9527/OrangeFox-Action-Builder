@@ -126,6 +126,12 @@ if __name__ == "__main__":
         print(f"    搜索路径: {build_top}/out/target/product/*/")
         sys.exit(1)
 
+    # 输出文件直接覆盖原始镜像
+    output = custom
+
+    success = merge_avb(sig_file, custom, output)
+    sys.exit(0 if success else 1)
+
     # 输出文件与输入同目录
     output = os.path.join(os.path.dirname(custom), "recovery_avb_signed.img")
 
