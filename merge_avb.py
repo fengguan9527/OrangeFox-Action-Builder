@@ -132,8 +132,14 @@ if __name__ == "__main__":
     success = merge_avb(sig_file, custom, output)
     sys.exit(0 if success else 1)
 
-    # 输出文件与输入同目录
-    output = os.path.join(os.path.dirname(custom), "recovery_avb_signed.img")
+    # 输出临时文件，成功后覆盖原始 OrangeFox 镜像
+    temp_output = custom + ".avb_tmp"
 
-    success = merge_avb(sig_file, custom, output)
-    sys.exit(0 if success else 1)
+    success = merge_avb(sig_file, custom, temp_output)
+
+    if success:
+        os.replace(temp_output, custom)
+        print(f"[+] 已替换原始镜像: {custom}")
+    else:
+        if os.path.exists(temp_output):
+            os.remove(temp_output)
