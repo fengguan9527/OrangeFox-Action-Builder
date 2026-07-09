@@ -69,29 +69,23 @@ jobs:
 
     steps:
     # ──────────────────────────────────────────────────
-    # 1. 检出 Action Builder 仓库
+    # 1. 杂项（检出仓库 + 清理磁盘 + 设置交换空间）
     # ──────────────────────────────────────────────────
-    - name: Checkout
+    - name: 杂项
       uses: actions/checkout@v4
 
-    # ──────────────────────────────────────────────────
-    # 2. 清理磁盘空间
-    # ──────────────────────────────────────────────────
-    - name: Clean-up
+    - name: 杂项
       uses: rokibhasansagar/slimhub_actions@main
 
-    # ──────────────────────────────────────────────────
-    # 3. 设置 24GB 交换空间（物理内存不够时用）
-    # ──────────────────────────────────────────────────
-    - name: Swap Space
+    - name: 杂项
       uses: pierotofy/set-swap-space@master
       with:
         swap-size-gb: 24
 
     # ──────────────────────────────────────────────────
-    # 4. 安装 Android 编译环境
+    # 2. 安装 Android 编译环境
     # ──────────────────────────────────────────────────
-    - name: Build Environment
+    - name: 安装编译环境
       run: |
         sudo apt install aria2 -y
         git clone https://gitlab.com/OrangeFox/misc/scripts.git -b master
@@ -99,9 +93,9 @@ jobs:
         sudo bash setup/android_build_env.sh
 
     # ──────────────────────────────────────────────────
-    # 5. 同步 OrangeFox 源码
+    # 3. 同步 OrangeFox 源码
     # ──────────────────────────────────────────────────
-    - name: Set-up Manifest
+    - name: 同步源码
       if: inputs.MANIFEST_BRANCH == '16.0' || inputs.MANIFEST_BRANCH == '12.1' || inputs.MANIFEST_BRANCH == '11.0'
       run: |
         mkdir -p ${GITHUB_WORKSPACE}/OrangeFox
@@ -118,9 +112,9 @@ jobs:
         ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
 
     # ──────────────────────────────────────────────────
-    # 6. 克隆设备树到指定路径
+    # 4. 克隆设备树
     # ──────────────────────────────────────────────────
-    - name: Clone Device Tree
+    - name: 克隆设备树
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
         git clone ${{ inputs.DEVICE_TREE }} -b ${{ inputs.DEVICE_TREE_BRANCH }} ./${{ inputs.DEVICE_PATH }}
@@ -128,13 +122,11 @@ jobs:
         echo "COMMIT_ID=$(git rev-parse HEAD)" >> $GITHUB_ENV
 
     # ──────────────────────────────────────────────────
-    # 7. 编译 OrangeFox Recovery
+    # 5. 编译 OrangeFox Recovery
     # ──────────────────────────────────────────────────
-    - name: Building OrangeFox
+    - name: 编译 Recovery
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
-        # 强制 OrangeFox 版本号为 R12.0（上游 vendor/recovery 尚未更新）
-        sed -i 's/export FOX_INTERNAL_RELEASE=R11.3/export FOX_INTERNAL_RELEASE=R12.0/' vendor/recovery/OrangeFox_A16.sh
         set +e
         source build/envsetup.sh
         export ALLOW_MISSING_DEPENDENCIES=true
@@ -184,9 +176,9 @@ jobs:
         echo "ANDROID_BUILD_TOP=$ANDROID_BUILD_TOP" >> $GITHUB_ENV
 
     # ──────────────────────────────────────────────────
-    # 8. AVB 签名合并（签名文件在 Action Builder/AVB/, 脚本在根目录）
+    # 6. AVB 签名合并
     # ──────────────────────────────────────────────────
-    - name: Merge AVB Signature
+    - name: AVB 签名合并
       if: inputs.AVB_SIGNATURE != ''
       run: |
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
@@ -203,11 +195,12 @@ jobs:
         echo "[+] AVB 签名合并完成!"
 
     # ──────────────────────────────────────────────────
-    # 9. 设置发布信息及环境变量
+    # 7. 设置发布信息
     # ──────────────────────────────────────────────────
-    - name: Set Release Properties
+    - name: 设置发布信息
       run: |
-        echo "BUILD_DATE=$(TZ=Asia/Shanghai date +%Y%m%d)" >> $GITHUB_ENV
+        echo "BUILD_DATE=$(TZ=Asia/Shanghai date +'%Y%m%d')" >> $GITHUB_ENV
+        echo "BUILD_TIME=$(TZ=Asia/Shanghai date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
 
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
@@ -225,9 +218,9 @@ jobs:
         echo "RELEASE_AVB=$AVB_INFO" >> $GITHUB_ENV
 
     # ──────────────────────────────────────────────────
-    # 10. 上传到 GitHub Release
+    # 8. 上传到 GitHub Release
     # ──────────────────────────────────────────────────
-    - name: Upload to Release
+    - name: 上传到 Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
@@ -241,5 +234,6 @@ jobs:
           源码分支: fox_${{ inputs.MANIFEST_BRANCH }}
           设备: [设备树/分支](${{ env.DEVICE_TREE_URL }}/tree/${{ inputs.DEVICE_TREE_BRANCH }})
           构建提交: [commit](${{ env.DEVICE_TREE_URL }}/commit/${{ env.COMMIT_ID }})
+          构建时间: ${{ env.BUILD_TIME }}
           合入.patch补丁: ${{ env.RELEASE_PATCHES }}
           移植AVB签名: ${{ env.RELEASE_AVB }}
