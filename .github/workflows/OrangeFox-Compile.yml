@@ -71,13 +71,13 @@ jobs:
     # ──────────────────────────────────────────────────
     # 1. 杂项（检出仓库 + 清理磁盘 + 设置交换空间）
     # ──────────────────────────────────────────────────
-    - name: 杂项
+    - name: 检出仓库
       uses: actions/checkout@v4
 
-    - name: 杂项
+    - name: 清理磁盘
       uses: rokibhasansagar/slimhub_actions@main
 
-    - name: 杂项
+    - name: 设置交换空间
       uses: pierotofy/set-swap-space@master
       with:
         swap-size-gb: 24
