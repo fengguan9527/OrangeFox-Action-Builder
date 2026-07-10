@@ -21,7 +21,7 @@ on:
       SYNC_REPO:
         description: 'sync 仓库地址'
         required: true
-        default: 'https://gitlab.com/OrangeFox/sync.git'
+        default: 'https://github.com/OrangeFox16/sync.git'
       DEVICE_TREE:
         description: '设备树仓库地址'
         required: true
