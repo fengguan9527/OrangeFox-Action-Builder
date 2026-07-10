@@ -18,6 +18,10 @@ on:
         - 16.0
         - 12.1
         - 11.0
+      SYNC_REPO:
+        description: 'sync 仓库地址'
+        required: true
+        default: 'https://gitlab.com/OrangeFox/sync.git'
       DEVICE_TREE:
         description: '设备树仓库地址'
         required: true
@@ -102,12 +106,7 @@ jobs:
         cd ${GITHUB_WORKSPACE}/OrangeFox
         git config --global user.name "${{ github.actor }}"
         git config --global user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
-        # 16.0 使用特定的 sync 仓库
-        if [ "${{ inputs.MANIFEST_BRANCH }}" == "16.0" ]; then
-          git clone https://github.com/OrangeFox16/sync.git -b master
-        else
-          git clone https://gitlab.com/OrangeFox/sync.git -b master
-        fi
+        git clone ${{ inputs.SYNC_REPO }} -b master
         cd sync
         ./orangefox_sync.sh --branch ${{ inputs.MANIFEST_BRANCH }} --path ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
 
