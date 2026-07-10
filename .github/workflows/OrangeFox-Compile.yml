@@ -203,6 +203,9 @@ jobs:
         echo "BUILD_DATE=$(TZ=Asia/Shanghai date +'%y%m%d')" >> $GITHUB_ENV
         echo "BUILD_TIME=$(TZ=Asia/Shanghai date +'%Y%m%d_%H%M%S')" >> $GITHUB_ENV
 
+        # ★ bash 局部变量（供本步骤直接使用，解决 $GITHUB_ENV 延迟生效问题）
+        BD=$(TZ=Asia/Shanghai date +'%y%m%d')
+
         cd ${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}
 
         DEVICE_TREE_URL="${{ inputs.DEVICE_TREE }}"
@@ -228,15 +231,15 @@ jobs:
 
 
         # ==============================
-        # Release 文件重命名（已移除 AVB 后缀）
+        # Release 文件重命名
         # ==============================
         OUT_DIR="${GITHUB_WORKSPACE}/OrangeFox/fox_${{ inputs.MANIFEST_BRANCH }}/out/target/product/${{ inputs.DEVICE_NAME }}"
         RELEASE_DIR="${GITHUB_WORKSPACE}/release"
 
         mkdir -p "$RELEASE_DIR"
 
-        # 统一命名格式，不再追加 _AVB_signed
-        BUILD_NAME="OrangeFox_${{ inputs.DEVICE_NAME }}_${BUILD_DATE}_REDMI-K90-PROMAX"
+        # 使用 bash 局部变量 $BD，避免 $GITHUB_ENV 延迟导致空值
+        BUILD_NAME="OrangeFox_${{ inputs.DEVICE_NAME }}_${BD}_REDMI-K90-PROMAX"
 
         # 复制 img（此时的 img 是已经被 Python 注入签名并覆盖重写的完好成品）
         for file in "$OUT_DIR"/OrangeFox*.img; do
