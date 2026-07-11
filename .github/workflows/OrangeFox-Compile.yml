@@ -25,7 +25,7 @@ on:
       DEVICE_TREE:
         description: '设备树仓库地址'
         required: true
-        default: 'https://github.com/fengguan9527/xiaomi_myron_k90pm_fox.git'
+        default: 'https://github.com/fengguan9527/myron_REDMI_K90PM_Fox.git'
       DEVICE_TREE_BRANCH:
         description: '设备树分支'
         required: true
